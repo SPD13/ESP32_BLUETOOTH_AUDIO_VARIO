@@ -33,9 +33,7 @@ int LEDState;
 static void IRAM_ATTR drdy_interrupt_handler();
 static void vario_task(void * pvParameter);
 static void wifi_config_task(void * pvParameter);
-static void pwr_ctrl_task(void* pvParameter);
 static void ble_task(void* pvParameter);
-static void power_off();
 
 // PCCA button (GPIO9) has an external 10K pullup resistor to VCC
 // This button has  different functions : program, configure, calibrate & audio toggle 
@@ -71,36 +69,27 @@ static void IRAM_ATTR drdy_interrupt_handler() {
 
 void setup() {
 	pinMode(pinPCCA, INPUT_PULLUP); //  Program/Configure/Calibrate/Audio Mute Button
-	pinMode(pinPwrCtrl, OUTPUT); // soft-switch power on/off
-	digitalWrite(pinPwrCtrl, LOW);
-	pinMode(pinPwrSens, INPUT); // to detect  power-off button press
-
 	pinMode(pinLED, OUTPUT_OPEN_DRAIN); // power/bluetooth LED, active low
 	LED_OFF();
+#ifdef AUDIO_ENABLE_PIN
 	pinMode(pinAudioEn, OUTPUT_OPEN_DRAIN); // output enable for 74HC240, active low
 	digitalWrite(pinAudioEn, HIGH);
+#endif
 
 	wifi_off(); // turn off radio to save power
 
-#ifdef TOP_DEBUG   
-#ifdef HW_REV_B 
+#ifdef TOP_DEBUG
 	// Serial print redirected to USB CDC port (on Ubuntu, shows up as /dev/ttyACMx)
-	Serial.begin();
-#endif	
-#ifdef HW_REV_A 
-	// Serial print to uart port. Requires external USB-uart adapter (on Ubuntu, shows up as /dev/ttyUSBx)
 	Serial.begin(115200);
 #endif
-#endif
 
-	// PWR button needs to be pressed for one second to switch on
-	delay(1000);
-	digitalWrite(pinPwrCtrl, HIGH);
 	LED_ON();
+#ifdef AUDIO_ENABLE_PIN
 	digitalWrite(pinAudioEn, LOW);
+#endif
 	spi_init();
 
-	dbg_printf(("\n\nESP32-C3 BLUETOOTH VARIO compiled on %s at %s\n", __DATE__, __TIME__));
+	dbg_printf(("\n\nESP32-WROOM BLUETOOTH VARIO compiled on %s at %s\n", __DATE__, __TIME__));
 	dbg_printf(("Firmware Revision %s\n", FwRevision));
 
 	dbg_println(("\nLoad non-volatile configuration and calibration data from flash"));  
@@ -108,7 +97,9 @@ void setup() {
 	nvd_calib_load(Calib);
 	adc_init();
 	int adcVal = adc_sample_average();
+#ifdef BATTERY_VOLTAGE_MONITOR
 	BatteryVoltage = adc_battery_voltage(adcVal);
+#endif
 
 	bWebConfigure = false;
 	dbg_println(("To start web configuration mode, press and hold the PCC button"));
@@ -136,7 +127,6 @@ void setup() {
   Serial.print(Freq);
   Serial.println(" Hz");		
    	
-	xTaskCreate( pwr_ctrl_task, "pwr_ctrl_task", 1024, NULL, PWR_CTRL_TASK_PRIORITY, NULL );
 	if (bWebConfigure == true) {
 		dbg_println(("Web configuration mode"));
 		// 3 second long tone with low frequency to indicate unit is now in web server configuration mode.
@@ -147,23 +137,15 @@ void setup() {
 		}
   	else {
 		dbg_println(("Vario mode"));
+#ifdef BATTERY_VOLTAGE_MONITOR
 		dbg_println(("\nAudio indication of battery voltage"));
 		ui_indicate_battery_voltage(BatteryVoltage);
+#endif
     	xTaskCreate( vario_task, "vario_task", 4096, NULL, VARIO_TASK_PRIORITY, NULL );
 		}
 	// delete the loopTask which called setup() from arduino app_main()
 	vTaskDelete(NULL);
 	}
-
-
-static void power_off() {
-	digitalWrite(pinPwrCtrl, LOW);
-	LED_OFF();
-	audio_generate_tone(200, 1000); // when you hear the tone, you can release the power button.
-	audio_off();
-	esp_deep_sleep_start(); // required as button is still pressed
-	}
-
 
 static void ble_task(void* pvParameter){
 	ble_uart_init();
@@ -176,46 +158,15 @@ static void ble_task(void* pvParameter){
 			LEDState = !LEDState;
 			digitalWrite(pinLED, LEDState);
 			}
+#ifdef BATTERY_VOLTAGE_MONITOR
 		BatteryVoltage = adc_battery_voltage();
-		ble_uart_transmit_LK8EX1(AltitudeM, ClimbrateCps, BatteryVoltage);				
+		ble_uart_transmit_LK8EX1(AltitudeM, ClimbrateCps, BatteryVoltage);
+#else
+		ble_uart_transmit_LK8EX1(AltitudeM, ClimbrateCps, 999);
+#endif
 		vTaskDelay(100/portTICK_PERIOD_MS);
 		}
 	}
-
-
-static void pwr_ctrl_task(void* pvParameter){
-	int state = 0;
-	int counter = 0;
-	int timeoutCounter = (int)(PWR_OFF_DELAY_MS/(10UL*portTICK_PERIOD_MS));
-
-	while (1) {
-		switch (state) {
-			case 0 :
-			default :  
-					if (digitalRead(pinPwrSens) == HIGH){
-						counter = 0;
-						state = 1;
-						}
-			break;
-				
-			case 1 : 
-					if (digitalRead(pinPwrSens) == HIGH){
-						counter++;
-						if (counter >= timeoutCounter) {
-							dbg_println(("Switching off power!"));
-							power_off();
-							}
-						}
-					else {
-						state = 0;
-						counter = 0;
-						}
-			break;
-				}
-		vTaskDelay(10 / portTICK_PERIOD_MS);
-		}
-	}
-
 
 static void wifi_config_task(void * pvParameter) {
 	if (!LittleFS.begin()){
@@ -251,7 +202,6 @@ static void vario_task(void * pvParameter) {
 		dbg_println(("Bad CRC read from MS5611 calibration PROM"));
 		dbg_flush();
 		ui_indicate_fault_MS5611(); 
-		power_off();
 		}
 	dbg_println(("MS5611 OK"));
   
@@ -260,7 +210,6 @@ static void vario_task(void * pvParameter) {
 		dbg_println(("Error reading Mpu9250 WHO_AM_I register"));
 		dbg_flush();
 		ui_indicate_fault_MPU9250();
-		power_off();
 		}
 	dbg_println(("MPU9250 OK"));
 
@@ -376,7 +325,6 @@ static void vario_task(void * pvParameter) {
 				if (pwrOffTimeoutSecs >= (Config.misc.pwrOffTimeoutMinutes*60)) {
 					dbg_println(("Timed out with no significant climb/sink, power down"));
 					ui_indicate_power_off();
-					power_off(); 
 					}   
 				}
 			}

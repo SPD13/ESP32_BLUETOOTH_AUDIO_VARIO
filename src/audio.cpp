@@ -7,7 +7,9 @@ static void audio_tone(int freqHz, int milliseconds);
 
 static void audio_tone(int freqHz, int milliseconds) {
 	uint8_t channel = 0;
+#ifdef AUDIO_ENABLE_PIN
 	digitalWrite(pinAudioEn, 0);
+#endif
 	ledcAttachPin(pinAudio, channel);
 	ledcWriteTone(channel, freqHz);
 	delay(milliseconds);
@@ -17,7 +19,9 @@ static void audio_tone(int freqHz, int milliseconds) {
 
 void audio_off() {
 	uint8_t channel = 0;
+#ifdef AUDIO_ENABLE_PIN
 	digitalWrite(pinAudioEn, 1);
+#endif
 	ledcWrite(channel, 0);
 	ledcDetachPin(pinAudio);
 	pinMode(pinAudio, OUTPUT);
@@ -38,7 +42,9 @@ void audio_set_frequency(int freqHz) {
 		uint8_t channel = 0;
 		ledcAttachPin(pinAudio, channel);
 		if (freqHz > 0) {
+#ifdef AUDIO_ENABLE_PIN
 			digitalWrite(pinAudioEn, 0);
+#endif
 			ledcWriteTone(channel, freqHz);	
 			}
 		else {
@@ -49,7 +55,11 @@ void audio_set_frequency(int freqHz) {
 
 
 void audio_generate_tone(int freqHz, int ms) {
+#ifdef AUDIO_ENABLE_PIN
 	digitalWrite(pinAudioEn, 0);
+#endif
 	audio_tone(freqHz, ms);
+#ifdef AUDIO_ENABLE_PIN
 	digitalWrite(pinAudioEn, 1);
+#endif
 	}

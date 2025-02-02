@@ -1,43 +1,22 @@
 #ifndef CONFIG_H_
 #define CONFIG_H_
 
-
-#ifdef HW_REV_A
-#define pinPCCA		9	// program/configure/calibrate/audio button
-#define pinAudio	4	// pwm beeper audio output
-#define pinAudioEn	3	// 74HC240 output enables, active low
-
-#define pinPwrSens	1	// detect power on/off button press
-#define pinPwrCtrl	2	// power on/off
-
-#define pinCSB		5	// CSB (ms5611)
-#define pinMISO		7	// SDO ms5611 & AD0 mpu9250
-#define pinNCS		10 	// NCS (mpu9250)
-#define pinMOSI		18 	// SDA
-#define pinSCK		19	// SCL
-#define pinDRDYInt	6  	// INT
-#define pinLED		8	// power-on and bluetooth active indication
-#endif
-
-#ifdef HW_REV_B
-#define pinPCCA		9	// program/configure/calibrate/audio button
-#define pinAudio	7	// pwm beeper audio output
+#define pinPCCA		33	// program/configure/calibrate/audio button
+#define pinAudio	14	// pwm beeper audio output
 #define pinAudioEn	6	// 74HC240 output enables, active low
 
-#define pinPwrSens	21	// detect power on/off button press
-#define pinPwrCtrl	10	// power on/off
+#define pinCSB		12	// CSB (ms5611)
+#define pinMISO		27	// SDO ms5611 & AD0 mpu9250
+#define pinNCS		17 	// NCS (mpu9250)
+#define pinMOSI		26 	// SDA
+#define pinSCK		25	// SCL
+#define pinDRDYInt	18  // INT
+#define pinLED		16	// power-on and bluetooth active indication
 
-#define pinCSB		20	// CSB (ms5611)
-#define pinMISO		1	// SDO ms5611 & AD0 mpu9250
-#define pinNCS		3 	// NCS (mpu9250)
-#define pinMOSI		4 	// SDA
-#define pinSCK		5	// SCL
-#define pinDRDYInt	2  	// INT
-#define pinLED		8	// power-on and bluetooth active indication
+//#define Serial USBSerial
 
-#define Serial USBSerial
-#endif
-
+//#define BATTERY_VOLTAGE_MONITOR //comment to disable battery monitoring
+//#define AUDIO_ENABLE_PIN //Comment to disable audio enable through a pin
 
 #define BTN_PCCA()  (digitalRead(pinPCCA) == HIGH ? 1 : 0)
 
@@ -105,7 +84,6 @@
 
 //#define USE_9DOF_AHRS
 
-#define PWR_CTRL_TASK_PRIORITY	2
 #define BLE_TASK_PRIORITY		3
 #define WIFI_CFG_TASK_PRIORITY	3
 #define VARIO_TASK_PRIORITY		(configMAX_PRIORITIES-2)
