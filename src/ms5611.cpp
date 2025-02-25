@@ -1,6 +1,6 @@
 #include <Arduino.h>
 #include "config.h"
-#include "spi.h"
+#include "spi_functions.h"
 #include "ms5611.h"
 
 MS5611::MS5611() {

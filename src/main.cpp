@@ -3,7 +3,7 @@
 #include <FS.h>
 #include <LittleFS.h>
 #include "config.h"
-#include "spi.h"
+#include "spi_functions.h"
 #include "util.h"
 #include "imu.h"
 #include "mpu9250.h"
@@ -17,6 +17,10 @@
 #include "wifi_cfg.h"
 #include "ui.h"
 #include "ble_uart.h"
+
+#ifdef EPAPER_DISPLAY
+#include "epaper_display.h"
+#endif
 
 const char* FwRevision = "0.99";
 
@@ -34,6 +38,11 @@ static void IRAM_ATTR drdy_interrupt_handler();
 static void vario_task(void * pvParameter);
 static void wifi_config_task(void * pvParameter);
 static void ble_task(void* pvParameter);
+#ifdef EPAPER_DISPLAY
+static void epaper_task(void * pvParameter);
+volatile int EpaperBackgroundUpdate = 0;
+boolean boot_complete = false;
+#endif
 
 // PCCA button (GPIO9) has an external 10K pullup resistor to VCC
 // This button has  different functions : program, configure, calibrate & audio toggle 
@@ -69,6 +78,9 @@ static void IRAM_ATTR drdy_interrupt_handler() {
 
 void setup() {
 	pinMode(pinPCCA, INPUT_PULLUP); //  Program/Configure/Calibrate/Audio Mute Button
+#ifdef HAS_BUTTON_2
+	pinMode(pinBut2, INPUT_PULLUP); // Button 2
+#endif
 	pinMode(pinLED, OUTPUT_OPEN_DRAIN); // power/bluetooth LED, active low
 	LED_OFF();
 #ifdef AUDIO_ENABLE_PIN
@@ -89,10 +101,21 @@ void setup() {
 #endif
 	spi_init();
 
+#ifdef EPAPER_DISPLAY
+	display_init();
+#endif
+#ifdef EPAPER_DISPLAY
+	display_add_boot_message("Display initiated");
+#endif
 	dbg_printf(("\n\nESP32-WROOM BLUETOOTH VARIO compiled on %s at %s\n", __DATE__, __TIME__));
 	dbg_printf(("Firmware Revision %s\n", FwRevision));
-
-	dbg_println(("\nLoad non-volatile configuration and calibration data from flash"));  
+#ifdef EPAPER_DISPLAY
+	display_add_boot_message("Firmware rev. " + String(FwRevision));
+#endif
+	dbg_println(("\nLoad non-volatile configuration and calibration data from flash"));
+#ifdef EPAPER_DISPLAY
+	display_add_boot_message("Load Flash");
+#endif
 	nvd_config_load(Config);
 	nvd_calib_load(Calib);
 	adc_init();
@@ -113,22 +136,35 @@ void setup() {
 			}
 		}
 
- setCpuFrequencyMhz(80);
+  setCpuFrequencyMhz(80);
   uint32_t Freq = getCpuFrequencyMhz();
   Serial.print("CPU Freq = ");
   Serial.print(Freq);
   Serial.println(" MHz");
+#ifdef EPAPER_DISPLAY
+	display_add_boot_message("CPU Freq = " + String(Freq) + " Mhz");
+#endif
   Freq = getXtalFrequencyMhz();
   Serial.print("XTAL Freq = ");
   Serial.print(Freq);
   Serial.println(" MHz");
+#ifdef EPAPER_DISPLAY
+	display_add_boot_message("XTAL Freq = " + String(Freq) + " Mhz");
+#endif
   Freq = getApbFrequency();
   Serial.print("APB Freq = ");
   Serial.print(Freq);
-  Serial.println(" Hz");		
+  Serial.println(" Hz");
+#ifdef EPAPER_DISPLAY
+	display_add_boot_message("APB Freq = " + String(Freq) + " Mhz");
+#endif	
    	
 	if (bWebConfigure == true) {
 		dbg_println(("Web configuration mode"));
+#ifdef EPAPER_DISPLAY
+		String messages[] = {"Web config", "mode"};
+		display_show_modal_message("INFO", messages, 2);
+#endif
 		// 3 second long tone with low frequency to indicate unit is now in web server configuration mode.
 		// After you are done with web configuration, switch off the vario as the wifi radio
 		// consumes a lot of power.
@@ -142,6 +178,9 @@ void setup() {
 		ui_indicate_battery_voltage(BatteryVoltage);
 #endif
     	xTaskCreate( vario_task, "vario_task", 4096, NULL, VARIO_TASK_PRIORITY, NULL );
+#ifdef EPAPER_DISPLAY
+		xTaskCreate( epaper_task, "epaper_task", 4096, NULL, EPAPER_TASK_PRIORITY, NULL );
+#endif
 		}
 	// delete the loopTask which called setup() from arduino app_main()
 	vTaskDelete(NULL);
@@ -151,6 +190,9 @@ static void ble_task(void* pvParameter){
 	ble_uart_init();
 	int counter = 0;
 	dbg_println(("\nBluetooth LE LK8EX1 messages @ 10Hz\n"));
+#ifdef EPAPER_DISPLAY
+	display_add_boot_message("Bluetooth LK8EX1 @ 10Hz");
+#endif
 	while (1) {
 		counter++;
 		if (counter > 9) {
@@ -171,6 +213,10 @@ static void ble_task(void* pvParameter){
 static void wifi_config_task(void * pvParameter) {
 	if (!LittleFS.begin()){
 		dbg_println(("Error mounting LittleFS, restarting..."));
+#ifdef EPAPER_DISPLAY
+		String messages[] = {"LittleFS", "mounting"};
+		display_show_modal_message("ERROR", messages, 2);
+#endif
 		delay(1000);
 		ESP.restart();
 		}   
@@ -198,20 +244,37 @@ static void vario_task(void * pvParameter) {
 	int pwrOffTimeoutSecs;
 
 	dbg_println(("\nCheck communication with MS5611"));
+#ifdef EPAPER_DISPLAY
+	display_add_boot_message("[CHECK] MS5611");
+#endif
 	if (!Baro.read_prom()) {
 		dbg_println(("Bad CRC read from MS5611 calibration PROM"));
 		dbg_flush();
+#ifdef EPAPER_DISPLAY
+	display_add_boot_message("[ERROR] MS5611 bad CRC");
+#endif
 		ui_indicate_fault_MS5611(); 
 		}
 	dbg_println(("MS5611 OK"));
-  
+#ifdef EPAPER_DISPLAY
+	display_add_boot_message("[OK] MS5611");
+#endif  
 	dbg_println(("\nCheck communication with MPU9250"));
+#ifdef EPAPER_DISPLAY
+	display_add_boot_message("[ChHECK] MPU9250");
+#endif
 	if (!Imu.check_id()) {
 		dbg_println(("Error reading Mpu9250 WHO_AM_I register"));
+#ifdef EPAPER_DISPLAY
+	display_add_boot_message("[ERROR] MPU9250");
+#endif
 		dbg_flush();
 		ui_indicate_fault_MPU9250();
 		}
 	dbg_println(("MPU9250 OK"));
+#ifdef EPAPER_DISPLAY
+	display_add_boot_message("[OK] MPU9250");
+#endif
 
 #ifdef USE_9DOF_AHRS    
 	// configure MPU9250 to start generating gyro, accel and mag data  
@@ -227,12 +290,18 @@ static void vario_task(void * pvParameter) {
 	delay(50);  
 	  
 	dbg_println(("\nMS5611 config"));
+#ifdef EPAPER_DISPLAY
+	display_add_boot_message("MS5611 config");
+#endif
 	Baro.reset();
 	Baro.get_calib_coefficients(); // load MS5611 factory programmed calibration data
 	Baro.averaged_sample(4); // get an estimate of starting altitude
 	Baro.init_sample_state_machine(); // start the pressure & temperature sampling cycle
 
 	dbg_println(("\nKalmanFilter config"));
+#ifdef EPAPER_DISPLAY
+	display_add_boot_message("KalmanFilter Config");
+#endif
 	// initialize kalman filter with MS5611 estimated altitude, estimated initial climbrate = 0.0
 	kalmanFilter4d_configure(1000.0f*(float)Config.kf.accelVariance, ((float)Config.kf.adapt)/100.0f, Baro.altitudeCmAvg, 0.0f, 0.0f);
 
@@ -252,7 +321,10 @@ static void vario_task(void * pvParameter) {
 	pwrOffTimeoutSecs = 0;
 	kfTimeDeltaUSecs = imuTimeDeltaUSecs = 0.0f;
 	attachInterrupt(pinDRDYInt, drdy_interrupt_handler, RISING);
-
+#ifdef EPAPER_DISPLAY
+	display_add_boot_message("Boot Complete");
+	boot_complete = true;
+#endif
 	while (1) {
 		// MPU9250 500Hz ODR => 2mS sample interval
 		// wait for data ready interrupt from MPU9250 
@@ -317,6 +389,7 @@ static void vario_task(void * pvParameter) {
 				AltitudeM = F_TO_I(kfAltitudeCm/100.0f);
 				ClimbrateCps = F_TO_I(kfClimbrateCps);
 				vaudio_tick_handler(ClimbrateCps); // audio feedback handler
+#ifdef PWR_OFF_AUTO
 				if (ABS(ClimbrateCps) > PWR_OFF_THRESHOLD_CPS) { 
 					// reset power-off timeout watchdog if there is significant vertical motion
 					pwrOffTimeoutSecs = 0;
@@ -326,13 +399,16 @@ static void vario_task(void * pvParameter) {
 					dbg_println(("Timed out with no significant climb/sink, power down"));
 					ui_indicate_power_off();
 					}   
+#endif
 				}
 			}
 			
 		if (BtnPCCAPressed) {
 			BtnPCCAPressed = false;
+			#ifdef SOFTWARE_MUTE
 			IsMuted = !IsMuted;
 			if (IsMuted) audio_off();
+			#endif
 			}	
 		uint32_t elapsedUs =  micros() - marker; // calculate time  taken to read and process the data, must be less than 2mS
 		if (drdyCounter >= 500) {
@@ -357,6 +433,22 @@ static void vario_task(void * pvParameter) {
 	vTaskDelete(NULL);
 	}
 
+#ifdef EPAPER_DISPLAY
+static void epaper_task(void * pvParameter) {
+	while (1) {
+		if (boot_complete) {
+			if (EpaperBackgroundUpdate <= 0) {
+				EpaperBackgroundUpdate = EPAPER_BACKGROUND_REFRESH_CYCLES;
+				//display_draw_background();
+			}
+			display_refresh_data(AltitudeM, ClimbrateCps);
+			EpaperBackgroundUpdate--;
+		}
+		vTaskDelay(EPAPER_REFRESH_RATE_MS/portTICK_PERIOD_MS);
+	}
+	vTaskDelete(NULL);
+}
+#endif
 
 void loop(){
 	}

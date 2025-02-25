@@ -11,12 +11,13 @@
 #include "nvd.h"
 #include "adc.h"
 #include "wifi_cfg.h"
+#include "epaper_display.h"
 
 static const char* TAG = "wificfg";
 
 extern const char* FwRevision;
 
-const char* szAPSSID = "Vario-AP";
+const char* szAPSSID = "OpenVario-AP";
 const char* szAPPassword = ""; // no password for stand-alone access point
 
 AsyncWebServer* pServer = NULL;
@@ -154,25 +155,45 @@ static String server_string_processor(const String& var){
 
 static void wifi_start_as_ap() {
 	dbg_printf(("Starting Access Point %s with password %s\n", szAPSSID, szAPPassword));
+#ifdef EPAPER_DISPLAY
+	String messages[] = {"Access point", "connecting..."};
+	display_show_modal_message("INFO", messages, 2);
+#endif
 	WiFi.softAP(szAPSSID, szAPPassword);
 	IPAddress IP = WiFi.softAPIP();
 	dbg_printf(("AP IP address : "));
     dbg_println((IP));
+#ifdef EPAPER_DISPLAY
+	String messages2[] = {"- Wifi Access point -", "SSID: "+String(szAPSSID), "Pass: "+String(szAPPassword), "IP:   "+IP.toString()};
+	display_show_modal_message("INFO", messages2, 4);
+#endif
 	}
 
 
 static void wifi_start_as_station() {
 	dbg_printf(("Connecting as station to SSID %s\n", Config.cred.ssid));
+#ifdef EPAPER_DISPLAY
+	String messages[] = {"Station", "SSID: "+String(Config.cred.ssid), "connecting..."};
+	display_show_modal_message("INFO", messages, 3);
+#endif
     WiFi.mode(WIFI_STA);
     WiFi.begin(Config.cred.ssid.c_str(), Config.cred.password.c_str());
     if (WiFi.waitForConnectResult(10000UL) != WL_CONNECTED) {
     	dbg_printf(("Connection failed!\n"));
+#ifdef EPAPER_DISPLAY
+		String messages2[] = {"Station", "connection", "failed"};
+		display_show_modal_message("INFO", messages2, 3);
+#endif
     	wifi_start_as_ap();
     	}
 	else {
     	dbg_println(());
     	dbg_printf(("Local IP Address: "));
     	dbg_println((WiFi.localIP()));
+#ifdef EPAPER_DISPLAY
+		String messages2[] = {"Station", "connected", "IP: "+String(WiFi.localIP())};
+		display_show_modal_message("INFO", messages2, 3);
+#endif
 		}
 	}
 
@@ -191,6 +212,10 @@ void wificfg_ap_server_init() {
     pServer = new AsyncWebServer(80);
     if (pServer == NULL) {
         dbg_println(("Error creating AsyncWebServer!"));
+#ifdef EPAPER_DISPLAY
+		String messages[] = {"Error", "creating", "AsyncWebServer"};
+		display_show_modal_message("ERROR", messages, 3);
+#endif
         while(1);
         }
 
@@ -277,6 +302,10 @@ static void get_handler(AsyncWebServerRequest *request) {
 
 	if (bChange == true) {
 		dbg_println(("Config parameters changed"));
+#ifdef EPAPER_DISPLAY
+		String messages[] = {"Config", "parameters", "changed"};
+		display_show_modal_message("INFO", messages, 3);
+#endif
 		nvd_config_store(Config);
 		bChange = false;
 		}

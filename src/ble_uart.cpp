@@ -22,7 +22,7 @@ NimBLECharacteristic* pRxCharacteristic = NULL;
 static uint8_t ble_uart_nmea_checksum(const char *szNMEA);
 
 void ble_uart_init() {
-	NimBLEDevice::init("BLE-Vario");
+	NimBLEDevice::init("BLE-Vario-esp32");
 	NimBLEDevice::setMTU(46);
 	// default power level is +3dB, max +9dB
 	//NimBLEDevice::setPower(ESP_PWR_LVL_N3); // -3dB
@@ -60,7 +60,11 @@ static uint8_t ble_uart_nmea_checksum(const char *szNMEA){
    
 void ble_uart_transmit_LK8EX1(int32_t altm, int32_t cps, float batVoltage) {
 	char szmsg[40];
+#ifdef BATTERY_VOLTAGE_MONITOR
 	sprintf(szmsg, "$LK8EX1,999999,%d,%d,99,%.1f*", altm, cps, batVoltage);
+#else
+	sprintf(szmsg, "$LK8EX1,999999,%d,%d,99,999*", altm, cps);
+#endif
 	uint8_t cksum = ble_uart_nmea_checksum(szmsg);
 	char szcksum[5];
 	sprintf(szcksum,"%02X\r\n", cksum);

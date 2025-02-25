@@ -1,6 +1,6 @@
 #include <Arduino.h>
 #include "config.h"
-#include "spi.h"
+#include "spi_functions.h"
 #include "util.h"
 #include "audio.h"
 #include "mpu9250.h"

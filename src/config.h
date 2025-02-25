@@ -2,15 +2,17 @@
 #define CONFIG_H_
 
 #define pinPCCA		33	// program/configure/calibrate/audio button
+#define HAS_BUTTON_2
+#define pinBut2	    34  // Button 2
 #define pinAudio	14	// pwm beeper audio output
 #define pinAudioEn	6	// 74HC240 output enables, active low
 
 #define pinCSB		12	// CSB (ms5611)
 #define pinMISO		27	// SDO ms5611 & AD0 mpu9250
 #define pinNCS		17 	// NCS (mpu9250)
-#define pinMOSI		26 	// SDA
-#define pinSCK		25	// SCL
-#define pinDRDYInt	18  // INT
+#define pinMOSI		26 	// SDA & ePaper SDA
+#define pinSCK		25	// SCL & ePaper Clock
+#define pinDRDYInt	4  // INT
 #define pinLED		16	// power-on and bluetooth active indication
 
 //#define Serial USBSerial
@@ -18,7 +20,21 @@
 //#define BATTERY_VOLTAGE_MONITOR //comment to disable battery monitoring
 //#define AUDIO_ENABLE_PIN //Comment to disable audio enable through a pin
 
+#define EPAPER_DISPLAY 							//Comment to remove display functions
+#define EPAPER_REFRESH_RATE_MS 				500
+#define EPAPER_BACKGROUND_REFRESH_CYCLES 	10 	//How many quick updates before a full refresh
+
+// mapping suggestion for ESP32, e.g. TTGO T8 ESP32-WROVER
+// BUSY -> 4, RST -> 2, DC -> 0, CS -> SS(5), CLK -> SCK(25), DIN/SDA -> MOSI(26), GND -> GND, 3.3V -> 3.3V
+// for use with Board: "ESP32 Dev Module":
+#define EPAPER_PIN_CS 5
+#define EPAPER_PIN_DC 0
+#define EPAPER_PIN_RES 2
+#define EPAPER_PIN_BUSY 15
+
 #define BTN_PCCA()  (digitalRead(pinPCCA) == HIGH ? 1 : 0)
+#define BTN_2()  (digitalRead(pinBut2) == HIGH ? 1 : 0)
+//#define SOFTWARE_MUTE //Comment to disable muting from PCCA button
 
 #define LED_ON() 	{digitalWrite(pinLED, 0); LEDState = 1;}
 #define LED_OFF() 	{digitalWrite(pinLED, 1); LEDState = 0;}
@@ -65,6 +81,7 @@
 // Power-off timeout. The vario will power down
 // if it does not detect climb or sink rates more than
 // PWR_OFF_THRESHOLD_CPS, for the specified minutes.
+//#define PWR_OFF_AUTO						//Comment to disable auto power off
 #define PWR_OFF_TIMEOUT_MINUTES_DEFAULT   10
 #define PWR_OFF_TIMEOUT_MINUTES_MIN       5
 #define PWR_OFF_TIMEOUT_MINUTES_MAX       20
@@ -87,6 +104,7 @@
 #define BLE_TASK_PRIORITY		3
 #define WIFI_CFG_TASK_PRIORITY	3
 #define VARIO_TASK_PRIORITY		(configMAX_PRIORITIES-2)
+#define EPAPER_TASK_PRIORITY	2
 
 // change these parameters based on the frequency bandwidth of the speaker
 #define VARIO_SPKR_MIN_FREQHZ      	200

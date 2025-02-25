@@ -6,6 +6,9 @@
 #include "nvd.h"
 #include "ui.h"
 #include "mpu9250.h"
+#ifdef EPAPER_DISPLAY
+#include "epaper_display.h"
+#endif
 
 Ticker     Tickr;
 
@@ -14,6 +17,11 @@ extern MPU9250 Imu;
 volatile uint32_t BtnPCCAState;
 volatile bool BtnPCCAPressed = false;
 volatile bool BtnPCCALongPress = false;
+#ifdef HAS_BUTTON_2
+volatile uint32_t Btn2State;
+volatile bool Btn2Pressed = false;
+volatile bool Btn2LongPress = false;
+#endif
 	
 void IRAM_ATTR btn_debounce() {
 	BtnPCCAState = ((BtnPCCAState<<1) | ((uint32_t)BTN_PCCA()) );
@@ -23,6 +31,15 @@ void IRAM_ATTR btn_debounce() {
 	if (BtnPCCAState == 0) {
 		BtnPCCALongPress = true;
 		}
+#ifdef HAS_BUTTON_2
+	Btn2State = ((Btn2State<<1) | ((uint32_t)BTN_2()) );
+	if ((Btn2State | 0xFFFFFFF0) == 0xFFFFFFF8) {
+		Btn2Pressed = true;
+		}    
+	if (Btn2State == 0) {
+		Btn2LongPress = true;
+		}
+#endif
 	}
 
 	
@@ -35,6 +52,10 @@ void ui_btn_init() {
 void ui_btn_clear() {
 	BtnPCCAPressed  = false;
 	BtnPCCALongPress = false;
+#ifdef HAS_BUTTON_2
+	Btn2Pressed  = false;
+	Btn2LongPress = false;
+#endif
 	}
 
 	
@@ -112,16 +133,26 @@ void ui_calibrate_accel(CALIB_PARAMS_t &calib) {
 
 void ui_calibrate_gyro(CALIB_PARAMS_t &calib) {    
 	dbg_println(("\r\nCalibrating gyro"));
+#ifdef EPAPER_DISPLAY
+	display_add_boot_message("Calibrating Gyro");
+#endif
 	// normal power-on operation flow, always attempt to calibrate gyro. If calibration isn't possible because 
 	// the unit is continuously disturbed (e.g. you turned on the unit while already flying), indicate this and
 	// use the last saved gyro biases. Otherwise, save the new gyro biases to flash memory
 	if (Imu.calibrate_gyro(calib)) {
 		dbg_println(("Gyro calibration OK"));
+#ifdef EPAPER_DISPLAY
+		display_add_boot_message("Gyro calibration OK");
+#endif
 		audio_generate_tone(CALIBRATING_TONE_HZ, 1000);
 		nvd_calib_store(calib);
 		}
 	else { 
 		dbg_println(("Gyro calibration failed"));
+#ifdef EPAPER_DISPLAY
+		String messages[] = {"Gyro calib.", "failed"};
+		display_show_modal_message("ERROR", messages, 2);
+#endif
 		audio_generate_tone(CALIBRATING_TONE_HZ, 1000);
 		delay(500);
 		audio_generate_tone(CALIBRATING_TONE_HZ/2, 1000);
@@ -197,23 +228,42 @@ void ui_calibrate_accel_gyro() {
     // load the accel & gyro calibration parameters from the non-volatile data structure
   	if ((Calib.axBias == 0) && (Calib.ayBias == 0) && (Calib.azBias == 0)) {
     	dbg_println(("! Uncalibrated accelerometer !"));
+#ifdef EPAPER_DISPLAY
+		display_add_boot_message("! Uncalibrated accelerometer !");
+#endif
     	ui_indicate_uncalibrated_imu(); 
 		bCalibrateAccel = true;    
     	}
 	if (bCalibrateAccel == true) {  
     	dbg_println(("Starting accelerometer calibration"));
+#ifdef EPAPER_DISPLAY
+		display_add_boot_message("Starting accelerometer calibration");
+#endif
 		ui_calibrate_accel(Calib);
 		bCalibrateAccel = false;
 		}	
 	dbg_println(("Counting down to gyro calibration"));
+#ifdef EPAPER_DISPLAY
+		display_add_boot_message("Counting down to gyro calibration");
+#endif
 	dbg_println(("Press the PCCA button to enforce accelerometer calibration first"));
+#ifdef EPAPER_DISPLAY
+		display_add_boot_message("Button 1 for accel. calib. first");
+		display_add_boot_message("Countdown     10");
+#endif
 	for (int inx = 0; inx < 10; inx++) {
 		delay(500); 
 		dbg_println((10-inx));
+#ifdef EPAPER_DISPLAY
+		display_replace_boot_message("Countdown     "+String(10-inx));
+#endif
 		audio_generate_tone(CALIBRATING_TONE_HZ, 50); 
 		if (digitalRead(pinPCCA) == 0) {
 			bCalibrateAccel = true;
 			dbg_println(("PCCA button pressed"));
+#ifdef EPAPER_DISPLAY
+			display_add_boot_message("Button 1 pressed");
+#endif
 			break;
 			}
 		}
