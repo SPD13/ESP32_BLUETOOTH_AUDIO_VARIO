@@ -1,9 +1,9 @@
 #ifndef CONFIG_H_
 #define CONFIG_H_
 
-#define pinPCCA		33	// program/configure/calibrate/audio button
+#define pinPCCA		21	// program/configure/calibrate/audio button
 #define HAS_BUTTON_2
-#define pinBut2	    34  // Button 2
+#define pinBut2	    19  // Button 2
 #define pinAudio	14	// pwm beeper audio output
 #define pinAudioEn	6	// 74HC240 output enables, active low
 
@@ -32,9 +32,9 @@
 #define EPAPER_PIN_RES 2
 #define EPAPER_PIN_BUSY 15
 
-#define BTN_PCCA()  (digitalRead(pinPCCA) == HIGH ? 1 : 0)
+#define BTN_PCCA()  (digitalRead(pinPCCA) == LOW ? 1 : 0) //Don't know why it's inverted...
 #define BTN_2()  (digitalRead(pinBut2) == HIGH ? 1 : 0)
-//#define SOFTWARE_MUTE //Comment to disable muting from PCCA button
+#define SOFTWARE_MUTE //Comment to disable muting from PCCA button
 
 #define LED_ON() 	{digitalWrite(pinLED, 0); LEDState = 1;}
 #define LED_OFF() 	{digitalWrite(pinLED, 1); LEDState = 0;}

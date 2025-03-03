@@ -14,15 +14,21 @@ static unsigned int TextBootTitleX = 5;
 static unsigned int TextBootTitleY = 5;
 static unsigned int VarioBarStartX = 5;
 static unsigned int VarioBarRectX = 20;
-static unsigned int VarioBarRectY = 10;
+static unsigned int VarioBarRectY = 14;
 unsigned int VarioBarStartY; // Dynamically calculated based on screen height
-static unsigned int VarioNumberStartX = 50;
+static unsigned int VarioNumberStartX = 30;
 unsigned int VarioNumberStartY; // Dynamically calculated based on screen height
+static unsigned int AltNumberStartX = 30;
+static unsigned int AltNumberStartY = 250;
+unsigned int AudioStatusIconX; // Dynamically calculated based on screen height
+static unsigned int AudioStatusIconY = 10;
+
 
 void display_init() {
     display.init(115200,true,50,false);
     VarioBarStartY = (display.height()-(20*VarioBarRectY))/2;
     VarioNumberStartY = display.height()/2;
+    AudioStatusIconX = display.width() - 20;
     Serial.println("[ePaper] - Init");
 }
 
@@ -44,6 +50,11 @@ void display_boot_messages() {
         display.setCursor(TextBootTitleX, TextBootTitleY+40+(i*8));
         display.print(boot_messages[i]);
     }
+    //Web config message
+    display.setCursor(TextBootTitleX, display.height() - 3*8);
+    display.print(("To start WEB Config mode"));
+    display.setCursor(TextBootTitleX, display.height() - 2*8);
+    display.print(("Press & Hold Button 1"));
 
     while (display.nextPage());
     //display.hibernate();
@@ -106,31 +117,56 @@ void display_refresh_data(int32_t altm, int32_t cps) {
         display.drawRect(VarioBarStartX, VarioBarStartY+i*VarioBarRectY, VarioBarRectX, VarioBarRectY, GxEPD_BLACK);
         if (i == 10) {
             //Draw Mid Point
-            display.drawLine(VarioBarStartX-2, VarioBarStartY+i*VarioBarRectY, VarioBarStartX+2, VarioBarStartY+i*VarioBarRectY, GxEPD_BLACK);
+            display.fillRect(VarioBarStartX-5, VarioBarStartY+i*VarioBarRectY-1, 5, 3, GxEPD_BLACK);
+            display.fillRect(VarioBarStartX+VarioBarRectX, VarioBarStartY+i*VarioBarRectY-1, 5, 3, GxEPD_BLACK);
         }
     }
-    //Display current bar value
-    if (mps>10) mps=10;
-    if (mps<-10) mps=-10;
-    if (mps>=0)
-        display.fillRect(VarioBarStartX, VarioBarStartY+(10-mps)*VarioBarRectY, VarioBarRectX, mps*VarioBarRectY, GxEPD_BLACK);
-    else
-        display.fillRect(VarioBarStartX, VarioBarStartY+(10+mps)*VarioBarRectY, VarioBarRectX, mps*VarioBarRectY, GxEPD_BLACK);
-    //Text
-    display.setFont(&FreeMonoBold9pt7b);
-    display.setTextSize(2);
+    //Vario bar value, cap
+    if (mps>9.99) mps=9.99;
+    if (mps<-9.99) mps=-9.99;
+    display.fillRect(VarioBarStartX, VarioBarStartY+(10-mps)*VarioBarRectY, VarioBarRectX, mps*VarioBarRectY, GxEPD_BLACK);
+    //Vario Numeric value
+    display.setFont(&FreeMonoBold18pt7b);
     int16_t tbx, tby; uint16_t tbw, tbh;
     char S[6];
-    //Set new text
     display.setTextColor(GxEPD_BLACK);
-    floatToString(mps, S, sizeof(S), 2);
-    display.getTextBounds(S, 0, 0, &tbx, &tby, &tbw, &tbh);
+    dtostrf(mps,4,1,S);
+    String mps_str = String(S);
+    display.getTextBounds(mps_str, 0, 0, &tbx, &tby, &tbw, &tbh);
     display.setCursor(VarioNumberStartX, VarioNumberStartY-(tbh/2));
-    display.print(S);
-    display.setTextSize(1);
-    display.setCursor(VarioNumberStartX, VarioNumberStartY-(tbh/2)-30);
+    display.print(mps_str);
+    //Vario labels
+    display.setFont(&FreeMonoBold9pt7b);
+    display.setCursor(VarioNumberStartX+20, VarioNumberStartY-(tbh/2)-30);
     display.print("Climb");
-    display.setCursor(VarioNumberStartX, VarioNumberStartY-(tbh/2)+30);
+    display.setFont(&FreeMono9pt7b);
+    display.setCursor(VarioNumberStartX+30, VarioNumberStartY-(tbh/2)+20);
     display.print("m/s");
+    //Altitude numeric value
+    display.setFont(&FreeMono9pt7b);
+    display.getTextBounds(String(altm), 0, 0, &tbx, &tby, &tbw, &tbh);
+    display.setCursor(display.width()-tbw-10, AltNumberStartY);
+    display.print(String(altm));
+    //Altitude labels
+    display.setFont(&FreeMonoBold9pt7b);
+    display.setCursor(AltNumberStartX, AltNumberStartY-(tbh/2)-20);
+    display.print("Altitude");
+    display.setFont(&FreeMono9pt7b);
+    display.setCursor(AltNumberStartX+30, AltNumberStartY-(tbh/2)+20);
+    display.print("m");
+    //Status display
+    display.fillRect(AudioStatusIconX, AudioStatusIconY+4, 5, 5, GxEPD_BLACK);
+    display.fillRect(AudioStatusIconX+5, AudioStatusIconY+3, 1, 7, GxEPD_BLACK);
+    display.fillRect(AudioStatusIconX+6, AudioStatusIconY+2, 1, 9, GxEPD_BLACK);
+    display.fillRect(AudioStatusIconX+7, AudioStatusIconY+1, 1, 11, GxEPD_BLACK);
+    display.fillRect(AudioStatusIconX+8, AudioStatusIconY, 1, 12, GxEPD_BLACK);
+    if (IsMuted) {
+        display.drawLine(AudioStatusIconX + 10, AudioStatusIconY+3, AudioStatusIconX + 15, AudioStatusIconY + 8, GxEPD_BLACK);
+        display.drawLine(AudioStatusIconX + 15, AudioStatusIconY+3, AudioStatusIconX + 10, AudioStatusIconY + 8, GxEPD_BLACK);
+    } else {
+        display.drawLine(AudioStatusIconX + 10, AudioStatusIconY + 2, AudioStatusIconX + 10, AudioStatusIconY + 10, GxEPD_BLACK);
+        display.drawLine(AudioStatusIconX + 12, AudioStatusIconY + 4, AudioStatusIconX + 12, AudioStatusIconY + 8, GxEPD_BLACK);
+    }
+
     while (display.nextPage());
 }

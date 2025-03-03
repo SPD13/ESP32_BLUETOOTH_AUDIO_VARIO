@@ -14,32 +14,76 @@ Ticker     Tickr;
 
 extern MPU9250 Imu;
 
-volatile uint32_t BtnPCCAState;
 volatile bool BtnPCCAPressed = false;
 volatile bool BtnPCCALongPress = false;
+volatile unsigned int BtnPCCACyclesHigh = 0;
 #ifdef HAS_BUTTON_2
-volatile uint32_t Btn2State;
 volatile bool Btn2Pressed = false;
 volatile bool Btn2LongPress = false;
+volatile unsigned int Btn2CyclesHigh = 0;
 #endif
 	
 void IRAM_ATTR btn_debounce() {
-	BtnPCCAState = ((BtnPCCAState<<1) | ((uint32_t)BTN_PCCA()) );
+	if ((uint32_t)BTN_PCCA()) {
+		BtnPCCACyclesHigh = BtnPCCACyclesHigh + 1;
+	} else {
+		if (BtnPCCACyclesHigh > 0) {
+			if (BtnPCCACyclesHigh <= 1000/25) {
+				//Short press
+				BtnPCCAPressed = true;
+				BtnPCCALongPress = false;
+				dbg_println(("Button PCCA(1) Pressed"));
+			} else {
+				BtnPCCAPressed = false;
+				BtnPCCALongPress = true;
+				dbg_println(("Button PCCA(1) Long Pressed"));
+			}
+		}
+		BtnPCCACyclesHigh = 0;
+	}
+#ifdef HAS_BUTTON_2
+	if ((uint32_t)BTN_2()) {
+		Btn2CyclesHigh = Btn2CyclesHigh + 1;
+	} else {
+		if (Btn2CyclesHigh > 0) {
+			if (Btn2CyclesHigh <= 1000/25) {
+				//Short press
+				Btn2Pressed = true;
+				Btn2LongPress = false;
+				dbg_println(("Button 2 Pressed"));
+			} else {
+				Btn2Pressed = false;
+				Btn2LongPress = true;
+				dbg_println(("Button 2 Long Pressed"));
+			}
+		}
+		Btn2CyclesHigh = 0;
+	}
+	//dbg_println(("Button 2 " + String(Btn2CyclesHigh)));
+#endif
+	//dbg_println(("Button PCCA(1) "+String(BtnPCCAState) + " " + String(BtnPCCACyclesHigh)));
+
+/*	BtnPCCAState = ((BtnPCCAState<<1) | ((uint32_t)BTN_PCCA()) );
 	if ((BtnPCCAState | 0xFFFFFFF0) == 0xFFFFFFF8) {
 		BtnPCCAPressed = true;
-		}    
+		dbg_println(("Button PCCA(1) Pressed"));
+		}
 	if (BtnPCCAState == 0) {
 		BtnPCCALongPress = true;
+		dbg_println(("Button PCCA(1) Long Pressed"));
 		}
 #ifdef HAS_BUTTON_2
 	Btn2State = ((Btn2State<<1) | ((uint32_t)BTN_2()) );
 	if ((Btn2State | 0xFFFFFFF0) == 0xFFFFFFF8) {
 		Btn2Pressed = true;
+		dbg_println(("Button 2 Pressed"));
 		}    
 	if (Btn2State == 0) {
 		Btn2LongPress = true;
+		dbg_println(("Button 2 Long Pressed"));
 		}
 #endif
+*/
 	}
 
 	
@@ -262,7 +306,7 @@ void ui_calibrate_accel_gyro() {
 			bCalibrateAccel = true;
 			dbg_println(("PCCA button pressed"));
 #ifdef EPAPER_DISPLAY
-			display_add_boot_message("Button 1 pressed");
+			display_add_boot_message("Button PPCA(1) pressed");
 #endif
 			break;
 			}

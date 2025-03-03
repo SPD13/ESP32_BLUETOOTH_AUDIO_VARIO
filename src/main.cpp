@@ -322,7 +322,7 @@ static void vario_task(void * pvParameter) {
 	kfTimeDeltaUSecs = imuTimeDeltaUSecs = 0.0f;
 	attachInterrupt(pinDRDYInt, drdy_interrupt_handler, RISING);
 #ifdef EPAPER_DISPLAY
-	display_add_boot_message("Boot Complete");
+	display_add_boot_message("-- BOOT COMPLETE --");
 	boot_complete = true;
 #endif
 	while (1) {
@@ -409,7 +409,12 @@ static void vario_task(void * pvParameter) {
 			IsMuted = !IsMuted;
 			if (IsMuted) audio_off();
 			#endif
-			}	
+			}
+#ifdef HAS_BUTTON_2
+		if (Btn2Pressed) {
+			//Btn2Pressed = false;
+			}
+#endif
 		uint32_t elapsedUs =  micros() - marker; // calculate time  taken to read and process the data, must be less than 2mS
 		if (drdyCounter >= 500) {
 			drdyCounter = 0; // 1 second elapsed

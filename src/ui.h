@@ -5,6 +5,10 @@
 
 extern volatile bool BtnPCCAPressed;
 extern volatile bool BtnPCCALongPress;
+#ifdef HAS_BUTTON_2
+extern volatile bool Btn2Pressed;
+extern volatile bool Btn2LongPress;
+#endif
 
 void ui_indicate_uncalibrated_imu();
 void ui_indicate_power_off();

@@ -1,6 +1,7 @@
 #ifndef EPAPERDISPLAY_H_
 #define EPAPERDISPLAY_H_
 
+#include "audio.h"
 #include <SPI.h>
 // base class GxEPD2_GFX can be used to pass references or pointers to the display instance as parameter, uses ~1.2k more code
 // enable or disable GxEPD2_GFX base class
@@ -9,6 +10,7 @@
 #include <Fonts/FreeMonoBold9pt7b.h>
 #include <Fonts/FreeMono9pt7b.h>
 #include <Fonts/Picopixel.h>
+#include <Fonts/FreeMonoBold18pt7b.h>
 
 void display_init();
 void display_add_boot_message(String BootMessage);
