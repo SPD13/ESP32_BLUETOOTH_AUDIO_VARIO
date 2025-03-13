@@ -8,6 +8,8 @@ GxEPD2_BW<GxEPD2_290_BS, GxEPD2_290_BS::HEIGHT> display(GxEPD2_290_BS(/*CS=5*/ E
 #define MAX_BOOT_MESSAGES 40
 
 bool in_modal = false;
+bool display_status = true;
+bool alive_marker = false;
 uint8_t boot_line = 0;
 String boot_messages[MAX_BOOT_MESSAGES];
 static unsigned int TextBootTitleX = 5;
@@ -20,21 +22,25 @@ static unsigned int VarioNumberStartX = 30;
 unsigned int VarioNumberStartY; // Dynamically calculated based on screen height
 static unsigned int AltNumberStartX = 30;
 static unsigned int AltNumberStartY = 250;
-unsigned int AudioStatusIconX; // Dynamically calculated based on screen height
+unsigned int AudioStatusIconX; // Dynamically calculated based on screen width
 static unsigned int AudioStatusIconY = 10;
-
+unsigned int AliveMarkerX = 10; // Dynamically calculated based on screen width
+unsigned int AliveMarkerY = 10; // Dynamically calculated based on screen height
 
 void display_init() {
     display.init(115200,true,50,false);
     VarioBarStartY = (display.height()-(20*VarioBarRectY))/2;
     VarioNumberStartY = display.height()/2;
     AudioStatusIconX = display.width() - 20;
+    AliveMarkerX = display.width() - 20;
+    AliveMarkerY = display.height() - 20;
     Serial.println("[ePaper] - Init");
 }
 
 void display_boot_messages() {
     if (in_modal) return; //if modal message on, don't display
     const char WelcomeText[] = "Open Vario";
+    display.setRotation(0);
     display.setFont(&FreeMonoBold9pt7b);
     display.setPartialWindow(0, 0, display.width(), display.height());
     display.setTextColor(GxEPD_BLACK);
@@ -104,9 +110,47 @@ void display_show_modal_message(String titleText, String messageText[], int text
     while (display.nextPage());
 }
 
+void display_show_zz_message() {
+    in_modal = true;
+    display.setFullWindow();
+    display.setRotation(3);
+    display.firstPage();
+    display.fillScreen(GxEPD_WHITE);
+    display.setFont(&FreeMonoBold18pt7b);
+    display.setTextColor(GxEPD_BLACK);
+    int windowStartY = 50;
+    int16_t tbx, tby; uint16_t tbw, tbh;
+    display.getTextBounds("Z", 0, 0, &tbx, &tby, &tbw, &tbh);
+    display.drawRect(0, windowStartY, display.width(), tbh+30, GxEPD_BLACK);
+    display.setCursor(4, windowStartY + 30);
+    display.print("Z");
+    display.setFont(&FreeMonoBold9pt7b);
+    display.setCursor(4+tbw+5, windowStartY + 30);
+    display.print("Z...");
+    //Title
+    display.setTextSize(1);
+    display.setFont(&FreeMonoBold9pt7b);
+    display.getTextBounds("SCREEN OFF", 0, 0, &tbx, &tby, &tbw, &tbh);
+    display.fillRect(0, windowStartY-(tbh+20), display.width(), tbh + 20, GxEPD_BLACK);
+    display.setCursor(display.width()/2-tbw/2, windowStartY-tbh);
+    display.setTextColor(GxEPD_WHITE);
+    display.print("SCREEN OFF");
+    while (display.nextPage());
+}
+
+void display_clear_modal() {
+    display.setFullWindow();
+    display.setRotation(3);
+    display.firstPage();
+    display.fillScreen(GxEPD_WHITE);
+    while (display.nextPage());
+    in_modal = false;
+}
+
 void display_refresh_data(int32_t altm, int32_t cps) {
     if (in_modal) return; //if modal message on, don't display
     display.setPartialWindow(0, 0, display.width(), display.height());
+    display.setRotation(0);
     display.firstPage();
     //Convert cps
     float mps = ((float) cps)/100.;
@@ -167,6 +211,31 @@ void display_refresh_data(int32_t altm, int32_t cps) {
         display.drawLine(AudioStatusIconX + 10, AudioStatusIconY + 2, AudioStatusIconX + 10, AudioStatusIconY + 10, GxEPD_BLACK);
         display.drawLine(AudioStatusIconX + 12, AudioStatusIconY + 4, AudioStatusIconX + 12, AudioStatusIconY + 8, GxEPD_BLACK);
     }
+    //Alive marker
+    if (alive_marker) {
+        display.fillRect(AliveMarkerX, AliveMarkerY, 10, 10, GxEPD_BLACK);
+        alive_marker = false;
+    } else {
+        display.drawRect(AliveMarkerX, AliveMarkerY, 10, 10, GxEPD_BLACK);
+        alive_marker = true;
+    }
 
     while (display.nextPage());
+}
+
+void display_off() {
+    display_status = false;
+    display_show_zz_message();
+}
+
+void display_on() {
+    display_status = true;
+    display_clear_modal();
+}
+
+void display_toggle() {
+    if (display_status)
+        display_off();
+    else
+        display_on();
 }

@@ -323,6 +323,9 @@ static void vario_task(void * pvParameter) {
 	attachInterrupt(pinDRDYInt, drdy_interrupt_handler, RISING);
 #ifdef EPAPER_DISPLAY
 	display_add_boot_message("-- BOOT COMPLETE --");
+	#ifdef START_SCREEN_OFF
+		display_off();
+	#endif
 	boot_complete = true;
 #endif
 	while (1) {
@@ -412,7 +415,10 @@ static void vario_task(void * pvParameter) {
 			}
 #ifdef HAS_BUTTON_2
 		if (Btn2Pressed) {
-			//Btn2Pressed = false;
+			Btn2Pressed = false;
+			#ifdef EPAPER_DISPLAY
+			display_toggle();
+			#endif
 			}
 #endif
 		uint32_t elapsedUs =  micros() - marker; // calculate time  taken to read and process the data, must be less than 2mS

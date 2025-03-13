@@ -17,5 +17,10 @@ void display_add_boot_message(String BootMessage);
 void display_replace_boot_message(String BootMessage);
 void display_refresh_data(int32_t altm, int32_t cps);
 void display_show_modal_message(String titleText, String messageText[], int textNbItems);
+void display_show_zz_message();
+void display_clear_modal();
+void display_off();
+void display_on();
+void display_toggle();
 
 #endif
