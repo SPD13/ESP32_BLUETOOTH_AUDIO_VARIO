@@ -23,7 +23,6 @@
 #define EPAPER_DISPLAY 							//Comment to remove display functions
 #define EPAPER_REFRESH_RATE_MS 				500
 #define EPAPER_BACKGROUND_REFRESH_CYCLES 	10 	//How many quick updates before a full refresh
-//#define START_SCREEN_OFF						//Comment to start with the screen ON
 
 // mapping suggestion for ESP32, e.g. TTGO T8 ESP32-WROVER
 // BUSY -> 4, RST -> 2, DC -> 0, CS -> SS(5), CLK -> SCK(25), DIN/SDA -> MOSI(26), GND -> GND, 3.3V -> 3.3V
@@ -96,6 +95,10 @@
 
 // BLE LK8EX1 transmission is enabled as default
 #define BLE_DEFAULT  true
+// Sound on startup is enabled as default
+#define SOUND_DEFAULT  true
+// Screen on startup is enabled as default
+#define SCREEN_DEFAULT  true
 
 ////////////////////////////////////////////////////////////////////////////////
 // COMPILED CONFIGURATION PARAMETERS ( cannot be changed with web configuration )

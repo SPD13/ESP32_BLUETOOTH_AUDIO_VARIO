@@ -1,13 +1,13 @@
 <!DOCTYPE HTML>
 <html>
 <head>
-<title>ESP32-C3 Bluetooth Audio Vario</title>
+<title>ESP32 Bluetooth Audio Vario</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta charset="UTF-8">
 <link rel="stylesheet" type="text/css" href="style.css">
 </head>
 <body>
-<h1>ESP32-C3 Bluetooth Audio Vario</h1>
+<h1>ESP32 Bluetooth Audio Vario</h1>
 <div style="text-align:center">
 <p><span>Firmware Revision : </span><span id="firmwareRevision">%FIRMWARE_REVISION%</span></p>
 <p><span>Battery Voltage : </span><span id="batteryVoltage">%BATTERY_VOLTAGE%v</span></p>
@@ -111,6 +111,12 @@
 Bluetooth LK8EX1 @10Hz 
 <input type="radio" id="ble_off" name="ble" value="ble_off" %BLE_OFF%><label for="ble_off">Off</label>
 <input type="radio" id="ble_on" name="ble" value="ble_on" %BLE_ON%><label for="ble_on">On</label>
+<br>Sound status at startup
+<input type="radio" id="sound_off" name="sound" value="sound_off" %SOUND_OFF%><label for="sound_off">Off</label>
+<input type="radio" id="sound_on" name="sound" value="sound_on" %SOUND_ON%><label for="sound_on">On</label>
+<br>Screen status at startup (if present)
+<input type="radio" id="screen_off" name="screen" value="screen_off" %SCREEN_OFF%><label for="screen_off">Off</label>
+<input type="radio" id="screen_on" name="screen" value="screen_on" %SCREEN_ON%><label for="screen_on">On</label>
 </fieldset>
 
 <br>

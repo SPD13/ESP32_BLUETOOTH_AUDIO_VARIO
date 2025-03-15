@@ -149,6 +149,20 @@ static String server_string_processor(const String& var){
 	if (var == "BLE_ON") {
 		return Config.misc.bleEnable ? "checked" : "";
 		}
+	if (var == "SOUND_OFF") {
+		return Config.misc.soundEnable ? "" : "checked";
+		}
+	else 
+	if (var == "SOUND_ON") {
+		return Config.misc.soundEnable ? "checked" : "";
+		}
+	if (var == "SCREEN_OFF") {
+		return Config.misc.screenEnable ? "" : "checked";
+		}
+	else 
+	if (var == "SCREEN_ON") {
+		return Config.misc.screenEnable ? "checked" : "";
+		}
     else return "?";
     }
 
@@ -263,6 +277,16 @@ static void get_handler(AsyncWebServerRequest *request) {
 		inputMessage = request->getParam("ble")->value();
 		bChange = true; 
 		Config.misc.bleEnable = (inputMessage == "ble_on"); 
+		}
+	if (request->hasParam("sound")) {
+		inputMessage = request->getParam("sound")->value();
+		bChange = true;
+		Config.misc.soundEnable = (inputMessage == "sound_on"); 
+		}
+	if (request->hasParam("screen")) {
+		inputMessage = request->getParam("screen")->value();
+		bChange = true;
+		Config.misc.screenEnable = (inputMessage == "screen_on"); 
 		}
 	if (request->hasParam("climb")) {
 		inputMessage = request->getParam("climb")->value();

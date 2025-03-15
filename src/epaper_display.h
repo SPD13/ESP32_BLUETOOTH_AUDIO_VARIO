@@ -22,5 +22,7 @@ void display_clear_modal();
 void display_off();
 void display_on();
 void display_toggle();
+void display_cycle_alt();
+void display_reset_alt();
 
 #endif

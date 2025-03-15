@@ -114,6 +114,8 @@ void nvd_config_load(CONFIG_PARAMS_t &config) {
 		config.kf.adapt = Prefs.getInt("adapt", KF_ADAPT_DEFAULT);
 
 		config.misc.bleEnable = Prefs.getBool("ble", BLE_DEFAULT);
+		config.misc.soundEnable = Prefs.getBool("sound", SOUND_DEFAULT);
+		config.misc.screenEnable = Prefs.getBool("screen", SCREEN_DEFAULT);
 		config.misc.pwrOffTimeoutMinutes = Prefs.getInt("timeout", PWR_OFF_TIMEOUT_MINUTES_DEFAULT);
 		Prefs.end();
 		
@@ -144,6 +146,8 @@ void nvd_config_load(CONFIG_PARAMS_t &config) {
 		dbg_println(("MISCELLANEOUS"));
 		dbg_printf(("pwrOffTimeoutMinutes = %d\n", config.misc.pwrOffTimeoutMinutes));
 		dbg_printf(("bleEnable = %s\n", config.misc.bleEnable ? "true" : "false"));
+		dbg_printf(("soundEnable = %s\n", config.misc.soundEnable ? "true" : "false"));
+		dbg_printf(("screenEnable = %s\n", config.misc.screenEnable ? "true" : "false"));
 #endif
 		}
 	}
@@ -162,6 +166,8 @@ void nvd_config_reset(CONFIG_PARAMS_t &config) {
 	config.kf.adapt = KF_ADAPT_DEFAULT;
 
 	config.misc.bleEnable = BLE_DEFAULT;
+	config.misc.soundEnable = SOUND_DEFAULT;
+	config.misc.screenEnable = SCREEN_DEFAULT;
 	config.misc.pwrOffTimeoutMinutes = PWR_OFF_TIMEOUT_MINUTES_DEFAULT;
 	nvd_config_store(config);
 	}
@@ -182,6 +188,8 @@ void nvd_config_store(CONFIG_PARAMS_t &config) {
 	Prefs.putInt("adapt", config.kf.adapt);
 
 	Prefs.putBool("ble", config.misc.bleEnable);
+	Prefs.putBool("sound", config.misc.soundEnable);
+	Prefs.putBool("screen", config.misc.screenEnable);
 	Prefs.putInt("timeout", config.misc.pwrOffTimeoutMinutes);
 	Prefs.end();
 	}	
