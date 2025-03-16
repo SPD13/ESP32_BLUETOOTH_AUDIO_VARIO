@@ -32,6 +32,7 @@ boolean	bWebConfigure = false;
 volatile SemaphoreHandle_t DrdySemaphore;
 volatile int AltitudeM;
 volatile int ClimbrateCps;
+volatile float PressurePa;
 int LEDState;
 
 static void IRAM_ATTR drdy_interrupt_handler();
@@ -202,9 +203,11 @@ static void ble_task(void* pvParameter){
 			}
 #ifdef BATTERY_VOLTAGE_MONITOR
 		BatteryVoltage = adc_battery_voltage();
-		ble_uart_transmit_LK8EX1(AltitudeM, ClimbrateCps, BatteryVoltage);
+		//ble_uart_transmit_LK8EX1(AltitudeM, ClimbrateCps, BatteryVoltage);
+		ble_uart_transmit_XCTRC(AltitudeM, ((float)ClimbrateCps)/100., PressurePa, BatteryVoltage);
 #else
-		ble_uart_transmit_LK8EX1(AltitudeM, ClimbrateCps, 999);
+		//ble_uart_transmit_LK8EX1(AltitudeM, ClimbrateCps, 100);
+		ble_uart_transmit_XCTRC(AltitudeM, ((float)ClimbrateCps)/100., PressurePa, 100);
 #endif
 		vTaskDelay(100/portTICK_PERIOD_MS);
 		}
@@ -394,6 +397,7 @@ static void vario_task(void * pvParameter) {
 				kfTimeDeltaUSecs = 0.0f;
 				AltitudeM = F_TO_I(kfAltitudeCm/100.0f);
 				ClimbrateCps = F_TO_I(kfClimbrateCps);
+				PressurePa = Baro.pressurePa;
 				vaudio_tick_handler(ClimbrateCps); // audio feedback handler
 #ifdef PWR_OFF_AUTO
 				if (ABS(ClimbrateCps) > PWR_OFF_THRESHOLD_CPS) { 

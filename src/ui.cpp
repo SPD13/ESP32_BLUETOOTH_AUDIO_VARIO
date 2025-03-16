@@ -59,7 +59,7 @@ void IRAM_ATTR btn_debounce() {
 		}
 		Btn2CyclesHigh = 0;
 	}
-	//dbg_println(("Button 2 " + String(Btn2CyclesHigh)));
+	//dbg_println(("Button 2 " + String(digitalRead(pinBut2)) + " " + String(Btn2CyclesHigh)));
 #endif
 	//dbg_println(("Button PCCA(1) "+String(BtnPCCAState) + " " + String(BtnPCCACyclesHigh)));
 

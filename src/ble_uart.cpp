@@ -75,3 +75,21 @@ void ble_uart_transmit_LK8EX1(int32_t altm, int32_t cps, float batVoltage) {
 	pTxCharacteristic->setValue((const uint8_t*)szmsg, strlen(szmsg));
 	pTxCharacteristic->notify();   
 	}
+
+	void ble_uart_transmit_XCTRC(int32_t altm, float mps, float raw_press, float batVoltage) {
+		char szmsg[70];
+	#ifdef BATTERY_VOLTAGE_MONITOR
+		sprintf(szmsg, "$XCTRC,0,0,0,0,0,0,0,0.0,0.0,%d,0,0,%.2f,,,,%.1f,%.1f*", altm, mps, raw_press, batVoltage);
+	#else
+		sprintf(szmsg, "$XCTRC,0,0,0,0,0,0,0,0.0,0.0,%d,0,0,%.2f,,,,%.1f,100*", altm, mps, raw_press);
+	#endif
+		uint8_t cksum = ble_uart_nmea_checksum(szmsg);
+		char szcksum[5];
+		sprintf(szcksum,"%02X\r\n", cksum);
+		strcat(szmsg, szcksum);
+	#ifdef BLE_DEBUG	
+		dbg_printf(("%s", szmsg)); 
+	#endif
+		pTxCharacteristic->setValue((const uint8_t*)szmsg, strlen(szmsg));
+		pTxCharacteristic->notify();   
+	}
