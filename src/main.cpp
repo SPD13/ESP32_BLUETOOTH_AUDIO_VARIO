@@ -30,7 +30,7 @@ MS5611	Baro;
 boolean	bWebConfigure = false;
 
 volatile SemaphoreHandle_t DrdySemaphore;
-volatile int AltitudeM;
+volatile float AltitudeCm;
 volatile int ClimbrateCps;
 volatile float PressurePa;
 int LEDState;
@@ -203,11 +203,11 @@ static void ble_task(void* pvParameter){
 			}
 #ifdef BATTERY_VOLTAGE_MONITOR
 		BatteryVoltage = adc_battery_voltage();
-		//ble_uart_transmit_LK8EX1(AltitudeM, ClimbrateCps, BatteryVoltage);
-		ble_uart_transmit_XCTRC(AltitudeM, ((float)ClimbrateCps)/100., PressurePa, BatteryVoltage);
+		ble_uart_transmit_LK8EX1(((float)AltitudeCm)/100., ClimbrateCps, BatteryVoltage);
+		//ble_uart_transmit_XCTRC(((float)AltitudeCm)/100., ((float)ClimbrateCps)/100., PressurePa, BatteryVoltage);
 #else
-		//ble_uart_transmit_LK8EX1(AltitudeM, ClimbrateCps, 100);
-		ble_uart_transmit_XCTRC(AltitudeM, ((float)ClimbrateCps)/100., PressurePa, 100);
+		ble_uart_transmit_LK8EX1(((float)AltitudeCm)/100., ClimbrateCps, 100);
+		//ble_uart_transmit_XCTRC(((float)AltitudeCm)/100., ((float)ClimbrateCps)/100., PressurePa, 100);
 #endif
 		vTaskDelay(100/portTICK_PERIOD_MS);
 		}
@@ -395,7 +395,7 @@ static void vario_task(void * pvParameter) {
 				kalmanFilter4d_update(Baro.altitudeCm, zAccelAverage, (float*)&kfAltitudeCm, (float*)&kfClimbrateCps);
 				// reset time elapsed between kalman filter algorithm updates
 				kfTimeDeltaUSecs = 0.0f;
-				AltitudeM = F_TO_I(kfAltitudeCm/100.0f);
+				AltitudeCm = kfAltitudeCm;
 				ClimbrateCps = F_TO_I(kfClimbrateCps);
 				PressurePa = Baro.pressurePa;
 				vaudio_tick_handler(ClimbrateCps); // audio feedback handler
@@ -467,7 +467,7 @@ static void epaper_task(void * pvParameter) {
 				EpaperBackgroundUpdate = EPAPER_BACKGROUND_REFRESH_CYCLES;
 				//display_draw_background();
 			}
-			display_refresh_data(AltitudeM, ClimbrateCps);
+			display_refresh_data(((float)AltitudeCm)/100., ClimbrateCps);
 			EpaperBackgroundUpdate--;
 		}
 		vTaskDelay(EPAPER_REFRESH_RATE_MS/portTICK_PERIOD_MS);
