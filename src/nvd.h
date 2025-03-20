@@ -35,6 +35,7 @@ typedef struct  {
 typedef struct  {
 	int16_t  pwrOffTimeoutMinutes;
 	int16_t  bleEnable;
+	int16_t  bleProtocol;
 	int16_t  soundEnable;
 	int16_t  screenEnable;
 	} MISC_PARAMS_t;

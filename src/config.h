@@ -93,8 +93,10 @@
 #define MPU9250_ERROR_TONE_HZ	200 
 #define MS5611_ERROR_TONE_HZ	2500
 
-// BLE LK8EX1 transmission is enabled as default
+// BLE transmission is enabled as default
 #define BLE_DEFAULT  true
+// BLE protocol
+#define BLE_PROTOCOL_DEFAULT  0
 // Sound on startup is enabled as default
 #define SOUND_DEFAULT  true
 // Screen on startup is enabled as default

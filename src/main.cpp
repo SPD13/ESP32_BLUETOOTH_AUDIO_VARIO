@@ -203,11 +203,15 @@ static void ble_task(void* pvParameter){
 			}
 #ifdef BATTERY_VOLTAGE_MONITOR
 		BatteryVoltage = adc_battery_voltage();
-		ble_uart_transmit_LK8EX1(((float)AltitudeCm)/100., ClimbrateCps, BatteryVoltage);
-		//ble_uart_transmit_XCTRC(((float)AltitudeCm)/100., ((float)ClimbrateCps)/100., PressurePa, BatteryVoltage);
+		if (Config.misc.bleProtocol == 1)
+			ble_uart_transmit_XCTRC(((float)AltitudeCm)/100., ((float)ClimbrateCps)/100., PressurePa, BatteryVoltage);
+		else
+			ble_uart_transmit_LK8EX1(((float)AltitudeCm)/100., ClimbrateCps, BatteryVoltage);
 #else
+	if (Config.misc.bleProtocol == 1)
+		ble_uart_transmit_XCTRC(((float)AltitudeCm)/100., ((float)ClimbrateCps)/100., PressurePa, 100);
+	else
 		ble_uart_transmit_LK8EX1(((float)AltitudeCm)/100., ClimbrateCps, 100);
-		//ble_uart_transmit_XCTRC(((float)AltitudeCm)/100., ((float)ClimbrateCps)/100., PressurePa, 100);
 #endif
 		vTaskDelay(100/portTICK_PERIOD_MS);
 		}

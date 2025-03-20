@@ -149,6 +149,13 @@ static String server_string_processor(const String& var){
 	if (var == "BLE_ON") {
 		return Config.misc.bleEnable ? "checked" : "";
 		}
+	if (var == "BLE_LK8EX1") {
+		return Config.misc.bleProtocol == 0 ? "checked" : "";
+		}
+	else 
+	if (var == "BLE_XCTRC") {
+		return Config.misc.bleProtocol == 1 ? "checked" : "";
+		}
 	if (var == "SOUND_OFF") {
 		return Config.misc.soundEnable ? "" : "checked";
 		}
@@ -205,7 +212,7 @@ static void wifi_start_as_station() {
     	dbg_printf(("Local IP Address: "));
     	dbg_println((WiFi.localIP()));
 #ifdef EPAPER_DISPLAY
-		String messages2[] = {"Station", "connected", "IP: "+String(WiFi.localIP())};
+		String messages2[] = {"Station", "connected", "IP: "+String(WiFi.localIP().toString())};
 		display_show_modal_message("INFO", messages2, 3);
 #endif
 		}
@@ -277,6 +284,15 @@ static void get_handler(AsyncWebServerRequest *request) {
 		inputMessage = request->getParam("ble")->value();
 		bChange = true; 
 		Config.misc.bleEnable = (inputMessage == "ble_on"); 
+		}
+	if (request->hasParam("ble_protocol")) {
+		inputMessage = request->getParam("ble_protocol")->value();
+		bChange = true; 
+		if (inputMessage == "ble_XCTRC") {
+			Config.misc.bleProtocol = 1; 
+		} else {
+			Config.misc.bleProtocol = 0; 
+		}
 		}
 	if (request->hasParam("sound")) {
 		inputMessage = request->getParam("sound")->value();
